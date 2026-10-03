@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Amazon Comprehend Sentiment Analysis</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #222;
+        }
+
+        .header {
+            background: #232f3e;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header p {
+            margin-top: 8px;
+            color: #ddd;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-size: 16px;
+            resize: vertical;
+        }
+
+        button {
+            margin-top: 15px;
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: #ff9900;
+            color: #111;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #e88b00;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .sentiment {
+            font-size: 30px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px;
+        }
+
+        .score {
+            margin: 15px 0;
+        }
+
+        .score-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .bar {
+            height: 20px;
+            background: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        .positive {
+            background: #28a745;
+        }
+
+        .negative {
+            background: #dc3545;
+        }
+
+        .neutral {
+            background: #6c757d;
+        }
+
+        .mixed {
+            background: #ffc107;
+        }
+
+        .error {
+            color: #dc3545;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .loading {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="header">
+
+        <h1>Amazon Comprehend</h1>
+
+        <p>
+            Customer Feedback Sentiment Analysis
+        </p>
+
+    </div>
+
+
+    <div class="container">
+
+        <div class="card">
+
+            <h2>Analyze Customer Feedback</h2>
+
+            <p>
+                Enter customer feedback below and Amazon Comprehend
+                will identify its sentiment.
+            </p>
+
+            <textarea
+                id="feedback"
+                placeholder="Example: I really love this product. The quality is excellent!">
+            </textarea>
+
+            <button
+                id="analyzeButton"
+                onclick="analyzeSentiment()">
+
+                Analyze Sentiment
+
+            </button>
+
+            <div
+                id="loading"
+                class="loading"
+                style="display:none;">
+
+                Analyzing feedback...
+
+            </div>
+
+            <div
+                id="error"
+                class="error">
+            </div>
+
+
+            <div
+                id="result"
+                class="result">
+
+                <h2>Analysis Result</h2>
+
+                <div
+                    id="sentiment"
+                    class="sentiment">
+                </div>
+
+
+                <div class="score">
+
+                    <div class="score-label">
+                        <span>Positive</span>
+                        <span id="positiveText">0%</span>
+                    </div>
+
+                    <div class="bar">
+                        <div
+                            id="positiveBar"
+                            class="bar-fill positive">
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="score">
+
+                    <div class="score-label">
+                        <span>Negative</span>
+                        <span id="negativeText">0%</span>
+                    </div>
+
+                    <div class="bar">
+                        <div
+                            id="negativeBar"
+                            class="bar-fill negative">
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="score">
+
+                    <div class="score-label">
+                        <span>Neutral</span>
+                        <span id="neutralText">0%</span>
+                    </div>
+
+                    <div class="bar">
+                        <div
+                            id="neutralBar"
+                            class="bar-fill neutral">
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="score">
+
+                    <div class="score-label">
+                        <span>Mixed</span>
+                        <span id="mixedText">0%</span>
+                    </div>
+
+                    <div class="bar">
+                        <div
+                            id="mixedBar"
+                            class="bar-fill mixed">
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="footer">
+
+        Amazon Comprehend Sentiment Analysis Project
+
+    </div>
+
+
+<script>
+
+    // --------------------------------------------------
+    // IMPORTANT:
+    // Replace this URL with your Lambda Function URL
+    // --------------------------------------------------
+
+    const API_URL =
+        "https://lsb6y6td3fb2b2eggewxl7lri40ufdil.lambda-url.ap-south-1.on.aws/";
+
+
+    async function analyzeSentiment() {
+
+        const feedback =
+            document.getElementById("feedback").value.trim();
+
+        const button =
+            document.getElementById("analyzeButton");
+
+        const loading =
+            document.getElementById("loading");
+
+        const result =
+            document.getElementById("result");
+
+        const error =
+            document.getElementById("error");
+
+
+        error.innerText = "";
+
+
+        if (!feedback) {
+
+            error.innerText =
+                "Please enter customer feedback.";
+
+            return;
+
+        }
+
+
+        button.disabled = true;
+
+        loading.style.display = "block";
+
+        result.style.display = "none";
+
+
+        try {
+
+            const response = await fetch(
+                API_URL,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        feedback: feedback
+                    })
+                }
+            );
+
+
+            const data = await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.error ||
+                    "Something went wrong."
+                );
+
+            }
+
+
+            displayResult(data);
+
+        }
+
+        catch (err) {
+
+            error.innerText =
+                "Error: " + err.message;
+
+        }
+
+        finally {
+
+            button.disabled = false;
+
+            loading.style.display = "none";
+
+        }
+
+    }
+
+
+    function displayResult(data) {
+
+        const sentiment =
+            document.getElementById("sentiment");
+
+
+        sentiment.innerText =
+            data.sentiment;
+
+
+        if (data.sentiment === "POSITIVE") {
+
+            sentiment.style.color = "#28a745";
+
+        }
+
+        else if (data.sentiment === "NEGATIVE") {
+
+            sentiment.style.color = "#dc3545";
+
+        }
+
+        else if (data.sentiment === "NEUTRAL") {
+
+            sentiment.style.color = "#6c757d";
+
+        }
+
+        else {
+
+            sentiment.style.color = "#d39e00";
+
+        }
+
+
+        setScore(
+            "positive",
+            data.scores.positive
+        );
+
+        setScore(
+            "negative",
+            data.scores.negative
+        );
+
+        setScore(
+            "neutral",
+            data.scores.neutral
+        );
+
+        setScore(
+            "mixed",
+            data.scores.mixed
+        );
+
+
+        document.getElementById("result")
+            .style.display = "block";
+
+    }
+
+
+    function setScore(name, value) {
+
+        document.getElementById(
+            name + "Text"
+        ).innerText =
+            value + "%";
+
+
+        document.getElementById(
+            name + "Bar"
+        ).style.width =
+            value + "%";
+
+    }
+
+</script>
+
+</body>
+
+</html>
